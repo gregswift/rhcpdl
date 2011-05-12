@@ -1,0 +1,24 @@
+rhcpdl
+===============
+
+Requirements
+===============
+
+* Python modules:
+	- os
+	- sys
+	- urlparse
+	- urllib
+  - shutil
+
+
+Installation
+===============
+
+1: copy included rhcpdl file to '/usr/local/bin'
+2: chmod +x /usr/local/bin/rhcpdl
+
+
+How to report bugs
+===============
+Visit http://rhcpdl.googlecode.com/ and goto the 'Issues' tab
