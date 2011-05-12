@@ -1,0 +1,80 @@
+#!/usr/bin/python
+
+import md5
+from os import path
+from shutil import move
+from sys import argv, exit, stderr
+#TODO: Move download into background and display status bar
+#import threading
+from urllib import urlretrieve
+from urlparse import urlparse
+
+DEBUG = False
+GOOD_TYPE = 'application/octet-stream'
+
+# I built get_md5_digest from research several years ago, it may be almost
+# identical to the original sources, so I apologize for not knowing who
+# deserves the credit
+def get_md5_digest(full_path):
+   """
+   Return the md5 hex digest of a file without loading it all into memory
+   """
+   if not path.isfile(full_path):
+       return
+   f = open(full_path)
+   digest = md5.new()
+   while True:
+       buf = f.read(4096)
+       if (buf == ""):
+           break
+       digest.update(buf)
+   f.close()
+   return digest.hexdigest()
+
+def get_file_from_rhn(url):
+   """
+   Download the file from the provided url and return a tuple
+   containing the filename and the headers
+   """
+   obj = urlretrieve(url)
+   return obj
+
+if __name__ == '__main__':
+   cwd = path.realpath(path.curdir)
+   url = argv[1]
+   if DEBUG: print "URL: ", url
+   parsedurl = urlparse(url)
+   filename = path.split(parsedurl[2])[-1]
+   if DEBUG: print "Filename: ", filename
+
+   params = {}
+   for param in parsedurl[4].split('&'):
+       key, value = param.split('=')
+       if DEBUG: print "Parameter %s = %s" % (key, value)
+       params[key] = value
+   if 'ext' not in params.keys():
+       url += '&ext=.%s' % filename.split('.')[-1]
+       if DEBUG: print "Adjusted URL: %s" % url
+
+   obj = get_file_from_rhn(url)
+
+   headers = obj[1].headers
+   for header in headers:
+       header = header.strip().split(':')
+       if header[0] == 'Content-Type':
+           content = header[1].lstrip()
+
+   if content == GOOD_TYPE:
+       target = path.join(cwd, filename)
+       md5sum = get_md5_digest(obj[0])
+       if not md5sum:
+           stderr.write("ERROR: MD5 check failed for temp file: %s" % obj[0])
+           stderr.write("\n")
+           exit(10)
+       move(obj[0], filename)
+       print "File downloaded: %s" % target
+       print "MD5: %s" % md5sum
+   else:
+       stderr.write("ERROR: Unable to download the file, use an active URL.")
+       stderr.write("\n")
+       exit(1)
